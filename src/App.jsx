@@ -2,9 +2,11 @@ import { useState } from "react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
 
-import InvoiceForm from "./components/InvoiceForm.jsx";
-import InvoiceItems from "./components/InvoiceItems.jsx";
-import PreviewInvoice from "./components/PreviewInvoice.jsx";
+import InvoiceForm from './components/InvoiceForm'
+import InvoiceItems from './components/InvoiceItems'
+import InvoiceSummary from './components/InvoiceSummary'
+import PreviewInvoice from './components/PreviewInvoice'
+
 
 function App() {
   const [invoice, setInvoice] = useState({
@@ -50,11 +52,7 @@ function App() {
 
   const updateItem = (id, field, value) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, [field]: value }
-          : item
-      )
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
 
@@ -63,10 +61,7 @@ function App() {
   };
 
   const subtotal = items.reduce((sum, item) => {
-    return (
-      sum +
-      Number(item.quantity || 0) * Number(item.price || 0)
-    );
+    return sum + Number(item.quantity || 0) * Number(item.price || 0);
   }, 0);
 
   const tax = subtotal * 0.1;
@@ -76,91 +71,70 @@ function App() {
     return `Rs. ${Number(amount || 0).toFixed(2)}`;
   };
 
-const downloadPDF = async () => {
-  const invoiceElement = document.getElementById("invoice-preview");
+  const downloadPDF = async () => {
+    const invoiceElement = document.getElementById("invoice-preview");
 
-  if (!invoiceElement) {
-    alert("Invoice preview is not available.");
-    return;
-  }
-
-  try {
-    const canvas = await html2canvas(invoiceElement, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-    });
-
-    const imageData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imageWidth = pageWidth;
-    const imageHeight =
-      (canvas.height * imageWidth) / canvas.width;
-
-    let heightLeft = imageHeight;
-    let position = 0;
-
-    pdf.addImage(
-      imageData,
-      "PNG",
-      0,
-      position,
-      imageWidth,
-      imageHeight
-    );
-
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imageHeight;
-
-      pdf.addPage();
-
-      pdf.addImage(
-        imageData,
-        "PNG",
-        0,
-        position,
-        imageWidth,
-        imageHeight
+    if (!invoiceElement) {
+      alert(
+        "Invoice preview nahi mil raha. PreviewInvoice.jsx mein invoice-preview ID check karein.",
       );
-
-      heightLeft -= pageHeight;
+      return;
     }
 
-    pdf.save("My-Invoice.pdf");
+    try {
+      const canvas = await html2canvas(invoiceElement, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
 
-  } catch (error) {
-    console.error("PDF Generation Error:", error);
+      const imageData = canvas.toDataURL("image/png");
 
-    alert(
-      "PDF is not generated! Try again."
-    );
-  }
-};
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imageWidth = pageWidth;
+      const imageHeight = (canvas.height * imageWidth) / canvas.width;
+
+      let heightLeft = imageHeight;
+      let position = 0;
+
+      pdf.addImage(imageData, "PNG", 0, position, imageWidth, imageHeight);
+
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imageHeight;
+
+        pdf.addPage();
+
+        pdf.addImage(imageData, "PNG", 0, position, imageWidth, imageHeight);
+
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save("My-Invoice.pdf");
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+
+      alert("PDF generate nahi hui. Dobara try karein.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
-
         <h1 className="text-3xl sm:text-4xl font-bold text-center text-indigo-700 mb-8">
           Invoice Generator
         </h1>
 
         <div className="grid lg:grid-cols-2 gap-6">
-
           {/* Left Side */}
           <div className="space-y-6">
-            <InvoiceForm
-              invoice={invoice}
-              onChange={handleInvoiceChange}
-            />
+            <InvoiceForm invoice={invoice} onChange={handleInvoiceChange} />
 
             <InvoiceItems
               items={items}
@@ -172,13 +146,18 @@ const downloadPDF = async () => {
 
           {/* Right Side */}
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold">
-              Invoice Preview
-            </h2>
+            <h2 className="text-2xl font-bold">Invoice Preview</h2>
 
             <PreviewInvoice
               invoice={invoice}
               items={items}
+              subtotal={subtotal}
+              tax={tax}
+              total={total}
+              formatPrice={formatPrice}
+            />
+
+            <InvoiceSummary
               subtotal={subtotal}
               tax={tax}
               total={total}
@@ -192,7 +171,6 @@ const downloadPDF = async () => {
               Download PDF
             </button>
           </div>
-
         </div>
       </div>
     </div>
